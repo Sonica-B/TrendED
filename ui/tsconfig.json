@@ -1,7 +1,4 @@
 {
-	"files": ["eslint.config.js", "postcss.config.js", "tailwind.config.js"],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  "files": ["eslint.config.js", "postcss.config.js", "tailwind.config.js"],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }
