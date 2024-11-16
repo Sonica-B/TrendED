@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import os
 import time
+import json
 
 base_url = "https://api.adzuna.com/v1/api/jobs/us/search/"
 APP_ID = "4772744a"
@@ -55,12 +56,35 @@ def save_to_csv(data, file_path):
     else:
         jobs_df.to_csv(file_path, mode='w', index=False, header=True)
 
-    print(f"Files saved to {file_path}")
+    print(f"Job listings saved to {file_path}")
+
+def save_to_json(data, file_path):
+    if not data:
+        print("No jobs to save.")
+        return
+
+    if os.path.isfile(file_path):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            try:
+                existing_data = json.load(f)
+            except json.JSONDecodeError:
+                existing_data = [] # If file is empty or invalid, start with an empty list
+    else:
+        existing_data = []
+
+    updated_data = existing_data + data
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(updated_data, f, indent=4, ensure_ascii=False)
+
+    print(f"Job listings saved to {file_path}")
+
 
 def main():
-    query = "python developer"
-    location = "boston"
-    file_path = "adzunaAPI_jobs.csv"
+    query = "Data Analyst"
+    location = "New York"
+    csv_file = "adzunaAPI_jobs.csv"
+    json_file = "adzunaAPI_jobs.json"
     num_of_pages = 10
 
     job_listings = []
@@ -71,7 +95,8 @@ def main():
             jobs_data = parse(results)
             job_listings.extend(jobs_data)
 
-    save_to_csv(job_listings, file_path)
+    save_to_csv(job_listings, csv_file)
+    save_to_json(job_listings, json_file)
 
 if __name__ == "__main__":
     main()
