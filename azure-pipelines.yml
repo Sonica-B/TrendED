@@ -1,0 +1,35 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- integration
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  APP_NAME: 'trended-pathfinder'
+  RESOURCE_GROUP: 'TrendEd-Resource-Group'
+  VM_NAME: 'TrendEdVM'
+  LOCATION: 'West US'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install fastapi uvicorn requests pandas sklearn beautifulsoup4 azure-storage-blob
+  displayName: 'Install Dependencies'
+
+- script: |
+    scp -r . azureuser@${VM_NAME}.${LOCATION}.cloudapp.azure.com:/home/azureuser/trended-app
+  displayName: 'Copy Application to VM'
+
+- script: |
+    ssh azureuser@${VM_NAME}.${LOCATION}.cloudapp.azure.com "cd /home/azureuser/trended-app && uvicorn main:app --host 0.0.0.0 --port 8000 &"
+  displayName: 'Start Application on VM'
