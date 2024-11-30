@@ -1,7 +1,6 @@
 import requests
 import pandas as pd
 import os
-import time
 import json
 
 base_url = "https://api.adzuna.com/v1/api/jobs/us/search/"
@@ -18,7 +17,6 @@ def fetch(query, location, page):
     }
 
     url = f'{base_url}{page}'
-    print(url)
     response = requests.get(url, params=params)
     if response.status_code == 200:
         print(f"Retrieved page: {page} successfully")
@@ -81,19 +79,21 @@ def save_to_json(data, file_path):
 
 
 def main():
-    query = "Data Analyst"
-    location = "New York"
+    queries = ["Product Manager", "Business Analyst", "Technology Consultant"]
+    location = "New York, NY"
     csv_file = "adzunaAPI_jobs.csv"
     json_file = "adzunaAPI_jobs.json"
-    num_of_pages = 10
+    num_of_pages = 5
 
     job_listings = []
 
-    for page in range(1, num_of_pages+1):
-        results = fetch(query,location,page)
-        if results:
-            jobs_data = parse(results)
-            job_listings.extend(jobs_data)
+    for query in queries:
+        print(f"Finding Job postings for: {query}")
+        for page in range(1, num_of_pages+1):
+            results = fetch(query,location,page)
+            if results:
+                jobs_data = parse(results)
+                job_listings.extend(jobs_data)
 
     save_to_csv(job_listings, csv_file)
     save_to_json(job_listings, json_file)
