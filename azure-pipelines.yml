@@ -7,7 +7,8 @@ trigger:
 - integration
 
 pool:
-  vmImage: ubuntu-latest
+  name: Default
+  vmImage: ''
 
 variables:
   APP_NAME: 'trended-pathfinder'
