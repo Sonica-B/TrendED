@@ -4,7 +4,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import LatentDirichletAllocation
 
-
 def load_data():
     with open('../data/wpi_courses.json', 'r', encoding='utf-8') as course_file:
         courses = json.load(course_file)
@@ -15,9 +14,11 @@ def load_data():
     return courses, jobs
 
 
-def extract_dept_courses(courses, code):
-    return [course['Description'] for course in courses if course['Code'].startswith(code)]
-
+def extract_dept_courses(courses, codes):
+    descs = []
+    for code in codes:
+        descs += [course['Description'] for course in courses if course['Code'].startswith(code)]
+    return descs
 
 def extract_job_descriptions(jobs):
     job_descriptions = []
@@ -80,7 +81,13 @@ def display_top_jobs(top_jobs):
 
 def main():
     courses, jobs = load_data()
-    course_descriptions = extract_dept_courses(courses, 'BME')
+
+    course_codes = ['HI 1330', 'HI 2310', 'HI 2400', 'HI 3900', 'PY 1731', 'HI 2343', 'HI 2900', 'CS 3516',
+                    'CS 2102', 'CS 1101', 'CS 2022', 'CS 2223', 'CS 3431', 'CS 3133', 'CS 3041', 'CS 3043',
+                    'CS 2011', 'CS 4432', 'CS 4341', 'CS543', 'CS 502', 'CS 2303', 'MA 1021', 'MA 1022',
+                    'MA 1023', 'MA 1024', 'MA 2051', 'MA 2611', 'MA 2631', 'PH 1110', 'PH 1121', 'BB 1002',
+                    'BB 1035', 'CS 541', 'CS 547']
+    course_descriptions = extract_dept_courses(courses, course_codes)
     job_descriptions = extract_job_descriptions(jobs)
     statistical = True
     top_n = 5

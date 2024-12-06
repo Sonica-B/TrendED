@@ -2,11 +2,10 @@ import json
 import pandas as pd
 from docx import Document
 
-
+    
 def extract_all_text(doc_path):
     doc = Document(doc_path)
     all_text = []
-
     for para in doc.paragraphs:
         text = para.text.strip()
         if text:
