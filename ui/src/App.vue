@@ -1,7 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, useTemplateRef, nextTick } from 'vue';
+import { registrations } from './store.ts';
 import HelloWorld from './components/HelloWorld.vue';
-import { Menubar, Button, InputText, Card } from 'primevue';
+import { Message, Dialog, Menubar, Button, InputText, Card } from 'primevue';
+import { Form } from '@primevue/forms';
+import { type PublicKeyCredentialDescriptorJSON } from '@github/webauthn-json';
+import {
+  parseCreationOptionsFromJSON,
+  create,
+  get,
+  parseRequestOptionsFromJSON,
+  supported,
+  AuthenticationPublicKeyCredential,
+} from '@github/webauthn-json/browser-ponyfill';
+
+enum RegistrationState {
+  None,
+  Inputting,
+  Waiting,
+  Success,
+  Error,
+}
 
 const text = ref('');
 const msg = ref('');
@@ -9,9 +28,143 @@ const msg = ref('');
 function greet() {
   msg.value = 'Hello ' + text.value;
 }
+
+const registering = ref(RegistrationState.None);
+const showRegisterDialog = computed(() =>
+  [RegistrationState.Inputting, RegistrationState.Error].includes(registering.value)
+);
+const registrationForm = ref();
+function resolver({ values }) {
+  console.log(values);
+  const errors = {};
+  if ((values.name?.length ?? 0) < 4) {
+    errors.name = [{ message: 'Name must be at least 4 characters long' }];
+  }
+  if ((values.username?.length ?? 0) < 4) {
+    errors.username = [{ message: 'Username must be at least 4 characters long' }];
+  }
+  return { errors };
+}
+const firstInput = ref();
+
+function registeredCredentials(): PublicKeyCredentialDescriptorJSON[] {
+  return registrations.value.map((reg) => ({
+    id: reg.rawId,
+    type: reg.type,
+  }));
+}
+
+function openRegister() {
+  registering.value = RegistrationState.Inputting;
+  nextTick(() => {
+    firstInput.value.$el.focus();
+  });
+}
+
+async function onRegisterSubmit({ valid, states }) {
+  if (!valid) return;
+
+  registering.value = RegistrationState.Waiting;
+  try {
+    await register(states.name.value, states.username.value);
+    registering.value = RegistrationState.Success;
+  } catch {
+    registering.value = RegistrationState.Error;
+  }
+}
+
+async function register(name: string, username: string): Promise<void> {
+  // get id by contacting database
+  // const id = await fetch('', {
+  //   method: 'POST',
+  //   headers: {
+  //     'Content-Type': 'application/json',
+  //   },
+  //   body: JSON.stringify({
+  //     name,
+  //     username,
+  //   }),
+  // });
+  const cco = parseCreationOptionsFromJSON({
+    publicKey: {
+      challenge: 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+      rp: { name: 'Localhost, Inc.' },
+      user: {
+        id: 'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII',
+        name: username,
+        displayName: name,
+      },
+      pubKeyCredParams: [],
+      excludeCredentials: registeredCredentials(),
+      authenticatorSelection: { userVerification: 'discouraged' },
+      extensions: {
+        credProps: true,
+      },
+    },
+  });
+  try {
+    await create(cco);
+  } catch {}
+}
+
+async function authenticate(options?: {
+  conditionalMediation?: boolean;
+}): Promise<AuthenticationPublicKeyCredential> {
+  const cro = parseRequestOptionsFromJSON({
+    publicKey: {
+      challenge: 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+      allowCredentials: registeredCredentials(),
+      userVerification: 'discouraged',
+    },
+  });
+  return get(cro);
+}
 </script>
 
 <template>
+  <Dialog
+    v-model:visible="showRegisterDialog"
+    modal
+    header="Register"
+    position="topright"
+    class="bg-opacity-50 p-4 backdrop-blur-2xl"
+  >
+    <template #container="{}">
+      <Form
+        :resolver
+        v-slot="$form"
+        @keydown.esc="registering = RegistrationState.None"
+        @submit="onRegisterSubmit"
+        :validateOnValueUpdate="false"
+      >
+        <div class="mb-4 flex flex-col gap-2">
+          <InputText
+            ref="firstInput"
+            name="name"
+            class="flex-auto"
+            placeholder="John Smith"
+            autocomplete="off"
+          />
+          <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.name.error?.message }}
+          </Message>
+          <InputText name="username" class="flex-auto" placeholder="jsmith" autocomplete="off" />
+          <Message v-if="$form.username?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.username.error?.message }}
+          </Message>
+        </div>
+        <div class="flex justify-end gap-2">
+          <Button
+            type="button"
+            label="Cancel"
+            severity="secondary"
+            @click="registering = RegistrationState.None"
+          />
+          <Button type="submit" label="Register" />
+        </div>
+      </Form>
+    </template>
+  </Dialog>
   <nav class="fixed left-0 top-0 w-full">
     <Menubar class="rounded-none border-0 border-b bg-transparent backdrop-blur">
       <template #start>
@@ -20,7 +173,8 @@ function greet() {
       <template #end>
         <div class="flex items-center gap-2">
           <InputText placeholder="Search" type="text" class="w-32 sm:w-auto" />
-          <Avatar image="/images/avatar/amyelsner.png" shape="circle" />
+          <Button label="Sign In" @click="authenticate" />
+          <Button label="Register" @click="openRegister" />
         </div>
       </template>
     </Menubar>
