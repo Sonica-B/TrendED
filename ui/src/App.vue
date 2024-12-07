@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, nextTick } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 import { registrations } from './store.ts';
 import HelloWorld from './components/HelloWorld.vue';
 import { Message, Dialog, Menubar, Button, InputText, Card } from 'primevue';
-import { Form } from '@primevue/forms';
+import { Form, type FormResolverOptions, type FormSubmitEvent } from '@primevue/forms';
 import { type PublicKeyCredentialDescriptorJSON } from '@github/webauthn-json';
 import {
   parseCreationOptionsFromJSON,
@@ -33,10 +33,9 @@ const registering = ref(RegistrationState.None);
 const showRegisterDialog = computed(() =>
   [RegistrationState.Inputting, RegistrationState.Error].includes(registering.value)
 );
-const registrationForm = ref();
-function resolver({ values }) {
+function resolver({ values }: FormResolverOptions) {
   console.log(values);
-  const errors = {};
+  const errors: Record<string, { message: string }[]> = {};
   if ((values.name?.length ?? 0) < 4) {
     errors.name = [{ message: 'Name must be at least 4 characters long' }];
   }
@@ -48,10 +47,12 @@ function resolver({ values }) {
 const firstInput = ref();
 
 function registeredCredentials(): PublicKeyCredentialDescriptorJSON[] {
-  return registrations.value.map((reg) => ({
-    id: reg.rawId,
-    type: reg.type,
-  }));
+  return (
+    registrations.value?.map((reg) => ({
+      id: reg.rawId,
+      type: reg.type,
+    })) ?? []
+  );
 }
 
 function openRegister() {
@@ -61,7 +62,7 @@ function openRegister() {
   });
 }
 
-async function onRegisterSubmit({ valid, states }) {
+async function onRegisterSubmit({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
 
   registering.value = RegistrationState.Waiting;
@@ -103,13 +104,13 @@ async function register(name: string, username: string): Promise<void> {
     },
   });
   try {
-    await create(cco);
-  } catch {}
+    registrations.value = [...(registrations.value ?? []), (await create(cco)).toJSON()];
+  } catch {
+    throw new Error('Failed to create credential');
+  }
 }
 
-async function authenticate(options?: {
-  conditionalMediation?: boolean;
-}): Promise<AuthenticationPublicKeyCredential> {
+async function authenticate(): Promise<AuthenticationPublicKeyCredential> {
   const cro = parseRequestOptionsFromJSON({
     publicKey: {
       challenge: 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
@@ -131,11 +132,11 @@ async function authenticate(options?: {
   >
     <template #container="{}">
       <Form
-        :resolver
         v-slot="$form"
+        :resolver
+        :validate-on-value-update="false"
         @keydown.esc="registering = RegistrationState.None"
         @submit="onRegisterSubmit"
-        :validateOnValueUpdate="false"
       >
         <div class="mb-4 flex flex-col gap-2">
           <InputText
@@ -173,8 +174,11 @@ async function authenticate(options?: {
       <template #end>
         <div class="flex items-center gap-2">
           <InputText placeholder="Search" type="text" class="w-32 sm:w-auto" />
-          <Button label="Sign In" @click="authenticate" />
-          <Button label="Register" @click="openRegister" />
+          <template v-if="supported()">
+            <Button label="Sign In" @click="authenticate" />
+            <Button label="Register" @click="openRegister" />
+          </template>
+          <Message v-else severity="warn" size="small">Passkeys Not Supported</Message>
         </div>
       </template>
     </Menubar>

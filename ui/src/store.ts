@@ -1,7 +1,10 @@
 import { computed } from 'vue';
+import type { PublicKeyCredentialWithAttestationJSON } from '@github/webauthn-json';
 
-const cache = {
-  registrations: null,
+const cache: {
+  registrations?: PublicKeyCredentialWithAttestationJSON[];
+} = {
+  registrations: undefined,
 };
 export const registrations = computed({
   get() {
@@ -11,7 +14,7 @@ export const registrations = computed({
     }
     return cache.registrations;
   },
-  set(registrations) {
+  set(registrations: PublicKeyCredentialWithAttestationJSON[]) {
     cache.registrations = registrations;
     localStorage.setItem('registrations', JSON.stringify(registrations));
   },
