@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import LoginCard from './components/LoginCard.vue';
 import HelloWorld from './components/HelloWorld.vue';
 import { Menubar, Button, InputText, Card } from 'primevue';
+import { user } from './store';
+import LoginButton from './components/LoginButton.vue';
 
 const text = ref('');
 const msg = ref('');
@@ -19,13 +20,13 @@ function greet() {
         <span class="text-2xl font-semibold"> TrendED </span>
       </template>
       <template #end>
-        <LoginCard />
+        <LoginButton />
       </template>
     </Menubar>
   </nav>
   <section class="flex max-w-3xl flex-col gap-8 rounded-xl bg-white p-10 pt-20 dark:bg-surface-900">
     <h1 class="text-center text-4xl font-bold text-black dark:text-white">
-      Tailwind CSS + PrimeVue
+      {{ user === null ? 'Tailwind CSS + PrimeVue' : `Welcome, ${user.name}` }}
     </h1>
     <Card class="bg-surface-200 dark:bg-surface-800">
       <template #title> Buttons </template>

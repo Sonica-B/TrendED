@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, Ref, ref } from 'vue';
 import type { PublicKeyCredentialWithAttestationJSON } from '@github/webauthn-json';
 
 const cache: {
@@ -19,3 +19,18 @@ export const registrations = computed({
     localStorage.setItem('registrations', JSON.stringify(registrations));
   },
 });
+
+export type User = {
+  id: string;
+  name: string;
+  username: string;
+};
+fetch('http://localhost:8000/api/user', {
+  credentials: 'include',
+})
+  .then((response) => response.json())
+  .then((data) => {
+    user.value = data;
+  })
+  .catch(() => {});
+export const user: Ref<User | null> = ref(null);
