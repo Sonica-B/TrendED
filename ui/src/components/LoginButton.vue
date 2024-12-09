@@ -3,6 +3,7 @@ import { ref, nextTick } from 'vue';
 import { user } from '../store.ts';
 import { Message, Dialog, Button, InputText } from 'primevue';
 import { Form, type FormResolverOptions, type FormSubmitEvent } from '@primevue/forms';
+
 import {
   parseCreationOptionsFromJSON,
   create as webauthnCreate,
@@ -15,6 +16,20 @@ const registerErrorMessage = ref('');
 const authenticateErrorMessage = ref('');
 const open = ref(false);
 const newAccount = ref(false);
+
+function openLoginPrompt() {
+  open.value = true;
+  newAccount.value = false;
+  registerErrorMessage.value = '';
+  authenticateErrorMessage.value = '';
+  nextTick(() => {
+    signInFocus.value.$el.focus();
+  });
+}
+
+function closeLoginPrompt() {
+  open.value = false;
+}
 
 function registerResolver({ values }: FormResolverOptions) {
   console.log(values);
@@ -31,14 +46,6 @@ function registerResolver({ values }: FormResolverOptions) {
 const signInFocus = ref();
 const registerFocus = ref();
 const registerIntial = ref({});
-
-function openRegister() {
-  open.value = true;
-  newAccount.value = false;
-  nextTick(() => {
-    signInFocus.value.$el.focus();
-  });
-}
 
 async function register({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
@@ -88,7 +95,7 @@ async function register({ valid, states }: FormSubmitEvent) {
   user.value = verifyJson.user;
   console.log('Verify Json Reg', verifyJson);
   document.cookie = `session=${verifyJson.session}`;
-  open.value = false;
+  closeLoginPrompt();
 }
 
 async function authenticate({ states }: FormSubmitEvent) {
@@ -135,7 +142,7 @@ async function authenticate({ states }: FormSubmitEvent) {
   user.value = verifyJson.user;
   console.log('Verify Json', verifyJson);
   document.cookie = `session=${verifyJson.session}`;
-  open.value = false;
+  closeLoginPrompt();
 }
 
 async function logout() {
@@ -238,6 +245,6 @@ async function logout() {
       </Message>
     </template>
   </Dialog>
-  <Button v-if="user === null" label="Login" @click="openRegister" />
+  <Button v-if="user === null" label="Login" @click="openLoginPrompt" />
   <Button v-else label="Logout" @click="logout" />
 </template>
