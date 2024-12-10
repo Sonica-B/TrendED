@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, nextTick, type Ref } from 'vue';
-import { user } from '../store.ts';
-import { Message, Dialog, Button, InputText, ProgressBar } from 'primevue';
+import { user } from '@lib/store.ts';
+import { Menu, Message, Dialog, Button, InputText, ProgressBar } from 'primevue';
 import { Form, type FormResolverOptions, type FormSubmitEvent } from '@primevue/forms';
 
 import {
@@ -16,6 +16,8 @@ const registerErrorMessage = ref('');
 const authenticateErrorMessage = ref('');
 const open = ref(false);
 const newAccount = ref(false);
+
+const accountMenu = ref();
 
 function openLoginPrompt() {
   open.value = true;
@@ -82,7 +84,9 @@ async function register({ valid, states }: FormSubmitEvent) {
     delete cco.publicKey?.attestation;
     delete cco.publicKey?.rp.id;
 
-    const webauthResp = await webauthnCreate(cco);
+    const webauthResp = await webauthnCreate(cco).catch(() => {
+      updateWithAnim(registerErrorMessage, 'Registration canceled');
+    });
 
     console.log('webauthCreateResp', webauthResp);
     const verifyResp = await fetch('http://localhost:8000/register/verify', {
@@ -135,7 +139,9 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
     });
     console.log('gco', gco);
 
-    const webauthResp = await webauthnGet(gco);
+    const webauthResp = await webauthnGet(gco).catch(() => {
+      updateWithAnim(authenticateErrorMessage, 'Authentication canceled');
+    });
 
     console.log('webauthGetResp', webauthResp);
 
@@ -187,7 +193,7 @@ async function logout() {
     <template #container="{}">
       <div v-if="webauthnSupported()" class="grid grid-rows-1 transition-[grid-template-rows]">
         <Form v-if="!newAccount" v-slot="$form" @submit="authenticate">
-          <div class="flex flex-col gap-0.5">
+          <div class="flex flex-col gap-2">
             <InputText
               ref="signInFocus"
               name="username"
@@ -236,7 +242,7 @@ async function logout() {
           :validate-on-value-update="false"
           @submit="register"
         >
-          <div class="mb-4 flex flex-col gap-2">
+          <div class="flex flex-col gap-2">
             <InputText
               ref="registerFocus"
               name="username"
@@ -251,17 +257,21 @@ async function logout() {
             <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
               {{ $form.name.error?.message }}
             </Message>
+            <Message
+              v-if="registerErrorMessage.length > 0"
+              severity="error"
+              size="small"
+              variant="simple"
+              class="animate-shake"
+            >
+              {{ registerErrorMessage }}
+            </Message>
+            <div class="flex gap-2">
+              <Button variant="text" label="Back" @click="openLoginPrompt" />
+              <span class="flex-grow" />
+              <Button type="submit" label="Create Account" />
+            </div>
           </div>
-          <Message
-            v-if="registerErrorMessage.length > 0"
-            severity="error"
-            size="small"
-            variant="simple"
-            class="animate-shake"
-          >
-            {{ registerErrorMessage }}
-          </Message>
-          <Button type="submit" variant="text" label="Create Account" />
           <ProgressBar
             mode="indeterminate"
             class="-mx-4 -mb-4 mt-3 h-1 duration-200"
@@ -275,5 +285,27 @@ async function logout() {
     </template>
   </Dialog>
   <Button v-if="user === null" label="Login" @click="openLoginPrompt" />
-  <Button v-else label="Logout" @click="logout" />
+  <template v-else>
+    <Button
+      variant="text"
+      class="flex gap-4 !text-color"
+      severity="secondary"
+      aria-haspopup="true"
+      @click="accountMenu?.toggle"
+    >
+      {{ user.name }}
+      <span class="pi pi-user" />
+    </Button>
+    <Menu
+      ref="accountMenu"
+      :model="[
+        {
+          label: 'Logout',
+          icon: 'pi pi-sign-out',
+          command: logout,
+        },
+      ]"
+      :popup="true"
+    />
+  </template>
 </template>

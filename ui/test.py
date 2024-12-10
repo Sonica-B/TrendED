@@ -143,17 +143,20 @@ class Serv(BaseHTTPRequestHandler):
                 self.end_headers()
                 _ = self.wfile.write(json.dumps({'error': 'User already exists'}).encode())
                 return
-            new_user: User = user if user is not None else User(
-                id=str(uuid4()),
-                name=registration_args['name'],
-                username=registration_args['username'],
-                sessions=[],
-                sign_in_count=0,
-                crediential_id = "",
-                public_key= "",
-            )
-            database.add_user(new_user)
-            database.save()
+            if user is not None:
+                new_user = user
+            else:
+                new_user = User(
+                    id=str(uuid4()),
+                    name=registration_args['name'],
+                    username=registration_args['username'],
+                    sessions=[],
+                    sign_in_count=0,
+                    crediential_id = "",
+                    public_key= "",
+                )
+                database.add_user(new_user)
+                database.save()
             # create credential
             options = webauthn.generate_registration_options(
                 rp_id=rp_id,
@@ -304,6 +307,8 @@ class Serv(BaseHTTPRequestHandler):
                 return
             database.invalidate_session(session)
             database.save()
+            self.send_response(200)
+            self.end_headers()
 
         else:
             self.send_response(404)
