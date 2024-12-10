@@ -12,7 +12,6 @@ from webauthn.helpers.structs import AttestationConveyancePreference, PublicKeyC
 
 @dataclass
 class User:
-    verified: bool
     id: str
     name: str
     username: str
@@ -138,14 +137,13 @@ class Serv(BaseHTTPRequestHandler):
             registration_args: dict[str, str] = json.loads(body)
 
             user = database.get_user_by_username(registration_args['username'])
-            if user is not None and user.verified is True:
+            if user is not None and len(user.public_key) > 0:
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 _ = self.wfile.write(json.dumps({'error': 'User already exists'}).encode())
                 return
             new_user: User = user if user is not None else User(
-                verified=False,
                 id=str(uuid4()),
                 name=registration_args['name'],
                 username=registration_args['username'],
@@ -198,7 +196,7 @@ class Serv(BaseHTTPRequestHandler):
                 user.crediential_id = base64.b64encode(resp.credential_id).decode()
                 user.public_key = base64.b64encode(resp.credential_public_key).decode()
                 session = str(uuid4())
-                user.sessions.append(session)
+                database.add_user_session(user, session)
                 database.save()
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
@@ -270,7 +268,7 @@ class Serv(BaseHTTPRequestHandler):
                 )
                 session = str(uuid4())
                 user.sign_in_count = resp.new_sign_count
-                user.sessions.append(session)
+                database.add_user_session(user, session)
                 database.save()
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')

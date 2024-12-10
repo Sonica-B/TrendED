@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, type Ref } from 'vue';
 import { user } from '../store.ts';
-import { Message, Dialog, Button, InputText } from 'primevue';
+import { Message, Dialog, Button, InputText, ProgressBar } from 'primevue';
 import { Form, type FormResolverOptions, type FormSubmitEvent } from '@primevue/forms';
 
 import {
@@ -43,106 +43,125 @@ function registerResolver({ values }: FormResolverOptions) {
   return { errors };
 }
 
+async function updateWithAnim(ref: Ref<string>, str: string) {
+  ref.value = '';
+  await nextTick();
+  ref.value = str;
+}
+
 const signInFocus = ref();
 const registerFocus = ref();
 const registerIntial = ref({});
 
+const registerLoading = ref(false);
 async function register({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
-  const response = await fetch('http://localhost:8000/register', {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      name: states.name.value,
-      username: states.username.value,
-    }),
-  });
-  const json = await response.json();
-  if (!response.ok) {
-    registerErrorMessage.value = json.error;
-    return;
+  registerLoading.value = true;
+  try {
+    const response = await fetch('http://localhost:8000/register', {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: states.name.value,
+        username: states.username.value,
+      }),
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      await updateWithAnim(registerErrorMessage, json.error);
+      return;
+    }
+    const id: string = json.id;
+    const cco = parseCreationOptionsFromJSON({
+      publicKey: json.options,
+    });
+    console.log('cco', cco);
+
+    delete cco.publicKey?.attestation;
+    delete cco.publicKey?.rp.id;
+
+    const webauthResp = await webauthnCreate(cco);
+
+    console.log('webauthCreateResp', webauthResp);
+    const verifyResp = await fetch('http://localhost:8000/register/verify', {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        resp: webauthResp.toJSON(),
+        id,
+      }),
+    });
+
+    const verifyJson = await verifyResp.json();
+    if (!verifyResp.ok) {
+      await updateWithAnim(registerErrorMessage, verifyJson.error);
+      return;
+    }
+    user.value = verifyJson.user;
+    console.log('Verify Json Reg', verifyJson);
+    document.cookie = `session=${verifyJson.session}`;
+    closeLoginPrompt();
+  } finally {
+    registerLoading.value = false;
   }
-  const id: string = json.id;
-  const cco = parseCreationOptionsFromJSON({
-    publicKey: json.options,
-  });
-  console.log('cco', cco);
-
-  delete cco.publicKey?.attestation;
-  delete cco.publicKey?.rp.id;
-
-  const webauthResp = await webauthnCreate(cco);
-
-  console.log('webauthCreateResp', webauthResp);
-  const verifyResp = await fetch('http://localhost:8000/register/verify', {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      resp: webauthResp.toJSON(),
-      id,
-    }),
-  });
-
-  const verifyJson = await verifyResp.json();
-  if (!verifyResp.ok) {
-    registerErrorMessage.value = verifyJson.error;
-    return;
-  }
-  user.value = verifyJson.user;
-  console.log('Verify Json Reg', verifyJson);
-  document.cookie = `session=${verifyJson.session}`;
-  closeLoginPrompt();
 }
 
-async function authenticate({ states }: FormSubmitEvent) {
-  const response = await fetch('http://localhost:8000/authenticate', {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      username: states.username.value,
-    }),
-  });
-  const json = await response.json();
-  if (!response.ok) {
-    authenticateErrorMessage.value = json.error;
-    return;
+const authLoading = ref(false);
+async function authenticate({ valid, states }: FormSubmitEvent) {
+  if (!valid) return;
+  authLoading.value = true;
+  try {
+    const response = await fetch('http://localhost:8000/authenticate', {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: states.username.value,
+      }),
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      updateWithAnim(authenticateErrorMessage, json.error);
+      return;
+    }
+    const id: string = json.id;
+    const gco = parseRequestOptionsFromJSON({
+      publicKey: json.options,
+    });
+    console.log('gco', gco);
+
+    const webauthResp = await webauthnGet(gco);
+
+    console.log('webauthGetResp', webauthResp);
+
+    const verifyResp = await fetch('http://localhost:8000/authenticate/verify', {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        resp: webauthResp.toJSON(),
+        id,
+      }),
+    });
+
+    const verifyJson = await verifyResp.json();
+    if (!verifyResp.ok) {
+      updateWithAnim(authenticateErrorMessage, verifyJson.error);
+      return;
+    }
+    user.value = verifyJson.user;
+    console.log('Verify Json', verifyJson);
+    document.cookie = `session=${verifyJson.session}`;
+    closeLoginPrompt();
+  } finally {
+    authLoading.value = false;
   }
-  const id: string = json.id;
-  const gco = parseRequestOptionsFromJSON({
-    publicKey: json.options,
-  });
-  console.log('gco', gco);
-
-  const webauthResp = await webauthnGet(gco);
-
-  console.log('webauthGetResp', webauthResp);
-
-  const verifyResp = await fetch('http://localhost:8000/authenticate/verify', {
-    method: 'POST',
-    headers: {
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      resp: webauthResp.toJSON(),
-      id,
-    }),
-  });
-
-  const verifyJson = await verifyResp.json();
-  if (!verifyResp.ok) {
-    authenticateErrorMessage.value = verifyJson.error;
-    return;
-  }
-  user.value = verifyJson.user;
-  console.log('Verify Json', verifyJson);
-  document.cookie = `session=${verifyJson.session}`;
-  closeLoginPrompt();
 }
 
 async function logout() {
@@ -161,23 +180,21 @@ async function logout() {
     modal
     header="Register"
     position="topright"
-    class="bg-opacity-50 p-4 backdrop-blur-2xl"
+    class="overflow-clip bg-opacity-50 p-4 backdrop-blur-2xl"
     :close-on-escape="true"
     :dismissable-mask="true"
   >
     <template #container="{}">
       <div v-if="webauthnSupported()" class="grid grid-rows-1 transition-[grid-template-rows]">
         <Form v-if="!newAccount" v-slot="$form" @submit="authenticate">
-          <div class="flex flex-col gap-2">
-            <div class="flex gap-2">
-              <InputText
-                ref="signInFocus"
-                name="username"
-                class="flex-auto"
-                placeholder="jsmith"
-                autocomplete="off"
-              />
-            </div>
+          <div class="flex flex-col gap-0.5">
+            <InputText
+              ref="signInFocus"
+              name="username"
+              class="flex-auto"
+              placeholder="jsmith"
+              autocomplete="off"
+            />
             <Message v-if="$form.username?.invalid" severity="error" size="small" variant="simple">
               {{ $form.username.error?.message }}
             </Message>
@@ -186,6 +203,7 @@ async function logout() {
               severity="error"
               size="small"
               variant="simple"
+              class="animate-shake"
             >
               {{ authenticateErrorMessage }}
             </Message>
@@ -204,6 +222,11 @@ async function logout() {
               <Button type="submit" label="Sign In" />
             </div>
           </div>
+          <ProgressBar
+            mode="indeterminate"
+            class="-mx-4 -mb-4 mt-3 h-1 duration-200"
+            :class="{ 'opacity-0': !authLoading }"
+          />
         </Form>
         <Form
           v-else
@@ -234,10 +257,16 @@ async function logout() {
             severity="error"
             size="small"
             variant="simple"
+            class="animate-shake"
           >
             {{ registerErrorMessage }}
           </Message>
           <Button type="submit" variant="text" label="Create Account" />
+          <ProgressBar
+            mode="indeterminate"
+            class="-mx-4 -mb-4 mt-3 h-1 duration-200"
+            :class="{ 'opacity-0': !registerLoading }"
+          />
         </Form>
       </div>
       <Message v-else severity="error" size="small" variant="simple">
