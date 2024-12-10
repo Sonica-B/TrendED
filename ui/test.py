@@ -23,6 +23,7 @@ class User:
 
 
 rp_id = "localhost"
+expected_origin = "localhost:5173"
 
 class Database:
     def __init__(self, path: str):
@@ -90,7 +91,7 @@ authentication_to_challenge: dict[str, bytes] = {}
 class Serv(BaseHTTPRequestHandler):
     @override
     def end_headers(self):
-        self.send_header('Access-Control-Allow-Origin', 'http://localhost:5173')
+        self.send_header('Access-Control-Allow-Origin', expected_origin)
         self.send_header('Access-Control-Allow-Credentials', 'true')
         BaseHTTPRequestHandler.end_headers(self)
 
@@ -194,7 +195,7 @@ class Serv(BaseHTTPRequestHandler):
                     credential=json_obj["resp"],
                     expected_rp_id=rp_id,
                     expected_challenge=challenge,
-                    expected_origin="http://localhost:5173",
+                    expected_origin=expected_origin,
                 )
                 user.crediential_id = base64.b64encode(resp.credential_id).decode()
                 user.public_key = base64.b64encode(resp.credential_public_key).decode()
@@ -265,7 +266,7 @@ class Serv(BaseHTTPRequestHandler):
                     credential=json_obj["resp"],
                     expected_challenge=challenge,
                     expected_rp_id=rp_id,
-                    expected_origin="http://localhost:5173",
+                    expected_origin=expected_origin,
                     credential_public_key=base64.b64decode(user.public_key),
                     credential_current_sign_count=user.sign_in_count,
                 )

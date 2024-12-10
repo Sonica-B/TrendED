@@ -8,11 +8,13 @@ declare module 'vue-router' {
 }
 
 import Profile from '@pages/ProfileView.vue';
-import HomeView from '@pages/HomeView.vue';
+import Home from '@pages/HomeView.vue';
+import Jobs from '@pages/JobsView.vue';
 
 export const routes: RouteRecordRaw[] = [
-  { path: '/', component: HomeView, name: 'Home', meta: { icon: 'home' } },
+  { path: '/', component: Home, name: 'Home', meta: { icon: 'home' } },
   { path: '/profile', component: Profile, name: 'Profile', meta: { icon: 'user' } },
+  { path: '/jobs', component: Jobs, name: 'Jobs', meta: { icon: 'briefcase' } },
 ];
 
 export const router = createRouter({

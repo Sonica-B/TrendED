@@ -60,7 +60,7 @@ async function register({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
   registerLoading.value = true;
   try {
-    const response = await fetch('http://localhost:8000/register', {
+    const response = await fetch(`${import.meta.env.vite_server_addr}/register`, {
       method: 'POST',
       headers: {
         'Content-type': 'application/json',
@@ -86,10 +86,11 @@ async function register({ valid, states }: FormSubmitEvent) {
 
     const webauthResp = await webauthnCreate(cco).catch(() => {
       updateWithAnim(registerErrorMessage, 'Registration canceled');
+      throw new Error('Registration canceled');
     });
 
     console.log('webauthCreateResp', webauthResp);
-    const verifyResp = await fetch('http://localhost:8000/register/verify', {
+    const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/register/verify`, {
       method: 'POST',
       headers: {
         'Content-type': 'application/json',
@@ -119,7 +120,7 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
   authLoading.value = true;
   try {
-    const response = await fetch('http://localhost:8000/authenticate', {
+    const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/authenticate`, {
       method: 'POST',
       headers: {
         'Content-type': 'application/json',
@@ -141,11 +142,12 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
 
     const webauthResp = await webauthnGet(gco).catch(() => {
       updateWithAnim(authenticateErrorMessage, 'Authentication canceled');
+      throw new Error('Authentication canceled');
     });
 
     console.log('webauthGetResp', webauthResp);
 
-    const verifyResp = await fetch('http://localhost:8000/authenticate/verify', {
+    const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/authenticate/verify`, {
       method: 'POST',
       headers: {
         'Content-type': 'application/json',
@@ -171,7 +173,7 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
 }
 
 async function logout() {
-  await fetch('http://localhost:8000/logout', {
+  await fetch(`${import.meta.env.VITE_SERVER_ADDR}/logout`, {
     method: 'POST',
     credentials: 'include',
   });

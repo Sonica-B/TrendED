@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+export {};
 declare module '@primevue/forms' {
   export * from '@primevue/forms/form';
   export interface FormSlotsFixed {
