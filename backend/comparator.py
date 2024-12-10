@@ -8,7 +8,7 @@ def load_data():
     with open('../data/wpi_courses.json', 'r', encoding='utf-8') as course_file:
         courses = json.load(course_file)
 
-    with open('../data/adzunaAPI_jobs.json', 'r', encoding='utf-8') as jobs_file:
+    with open('../data/jobs.json', 'r', encoding='utf-8') as jobs_file:
         jobs = json.load(jobs_file)
 
     return courses, jobs
@@ -96,7 +96,6 @@ def main():
         top_jobs = find_top_n_jobs_lda(course_descriptions, job_descriptions, top_n)
     else:
         top_jobs = find_top_n_jobs_cosine(course_descriptions, job_descriptions, top_n)
-
     display_top_jobs(top_jobs)
 
 
