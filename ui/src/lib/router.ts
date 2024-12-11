@@ -1,23 +1,39 @@
 import { createWebHistory, createRouter, type RouteRecordRaw } from 'vue-router';
 import 'vue-router';
+import { isAuth } from '@lib/auth';
 
 declare module 'vue-router' {
   interface RouteMeta {
     icon?: string;
+    auth: boolean;
   }
 }
 
-import Profile from '@pages/ProfileView.vue';
-import Home from '@pages/HomeView.vue';
-import Jobs from '@pages/JobsView.vue';
-
 export const routes: RouteRecordRaw[] = [
-  { path: '/', component: Home, name: 'Home', meta: { icon: 'home' } },
-  { path: '/profile', component: Profile, name: 'Profile', meta: { icon: 'user' } },
-  { path: '/jobs', component: Jobs, name: 'Jobs', meta: { icon: 'briefcase' } },
+  {
+    path: '/',
+    component: () => import('@pages/HomeView.vue'),
+    name: 'Home',
+    meta: { icon: 'home', auth: false },
+  },
+  {
+    path: '/jobs',
+    component: () => import('@pages/JobsView.vue'),
+    name: 'Jobs',
+    meta: { icon: 'briefcase', auth: false },
+  },
+  {
+    path: '/profile',
+    component: () => import('@pages/ProfileView.vue'),
+    name: 'Profile',
+    meta: { icon: 'user', auth: true },
+  },
 ];
 
 export const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+router.beforeEach(async (to) => {
+  if (to.meta.auth && !(await isAuth())) return { path: '/' };
 });

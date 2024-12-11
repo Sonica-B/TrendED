@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { user } from '@lib/store';
+import { user } from '@lib/auth';
 </script>
 <template>
   <div class="flex h-full w-full justify-center align-middle">

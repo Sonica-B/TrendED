@@ -23,7 +23,7 @@ class User:
 
 
 rp_id = "localhost"
-expected_origin = "localhost:5173"
+expected_origin = "http://localhost:5173"
 
 class Database:
     def __init__(self, path: str):

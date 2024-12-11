@@ -3,12 +3,17 @@ import { Menubar } from 'primevue';
 import LoginButton from './components/LoginButton.vue';
 import { router } from '@lib/router';
 import { MenuItem } from 'primevue/menuitem';
+import { user } from './lib/auth';
 
-const routes: MenuItem[] = router.getRoutes().map((v) => ({
-  url: v.path,
-  label: v.name?.toString(),
-  icon: v.meta.icon,
-}));
+const routes: MenuItem[] = router
+  .getRoutes()
+  .map((v) => ({
+    url: v.path,
+    label: v.name?.toString(),
+    icon: v.meta.icon,
+    auth: v.meta.auth,
+  }))
+  .filter((v) => v !== null);
 </script>
 
 <template>
@@ -21,7 +26,12 @@ const routes: MenuItem[] = router.getRoutes().map((v) => ({
       <span class="text-2xl font-semibold"> TrendED </span>
     </template>
     <template #item="{ item, props }">
-      <RouterLink v-if="item.url" v-slot="{ href, navigate, isExactActive }" :to="item.url" custom>
+      <RouterLink
+        v-if="item.url && !(item.auth && user === null)"
+        v-slot="{ href, navigate, isExactActive }"
+        :to="item.url"
+        custom
+      >
         <a
           :href="href"
           v-bind="props.action"

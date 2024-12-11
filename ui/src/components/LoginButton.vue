@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { ref, nextTick, type Ref } from 'vue';
-import { user } from '@lib/store.ts';
 import { Menu, Message, Dialog, Button, InputText, ProgressBar } from 'primevue';
 import { Form, type FormResolverOptions, type FormSubmitEvent } from '@primevue/forms';
-
-import {
-  parseCreationOptionsFromJSON,
-  create as webauthnCreate,
-  get as webauthnGet,
-  supported as webauthnSupported,
-  parseRequestOptionsFromJSON,
-} from '@github/webauthn-json/browser-ponyfill';
+import { user, logout, login, register } from '@/lib/auth';
+import { supported as webauthnSupported } from '@github/webauthn-json';
 
 const registerErrorMessage = ref('');
 const authenticateErrorMessage = ref('');
@@ -29,7 +22,7 @@ function openLoginPrompt() {
   });
 }
 
-function closeLoginPrompt() {
+function closePrompt() {
   open.value = false;
 }
 
@@ -56,60 +49,14 @@ const registerFocus = ref();
 const registerIntial = ref({});
 
 const registerLoading = ref(false);
-async function register({ valid, states }: FormSubmitEvent) {
+async function registration({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
   registerLoading.value = true;
   try {
-    const response = await fetch(`${import.meta.env.vite_server_addr}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: states.name.value,
-        username: states.username.value,
-      }),
-    });
-    const json = await response.json();
-    if (!response.ok) {
-      await updateWithAnim(registerErrorMessage, json.error);
-      return;
-    }
-    const id: string = json.id;
-    const cco = parseCreationOptionsFromJSON({
-      publicKey: json.options,
-    });
-    console.log('cco', cco);
-
-    delete cco.publicKey?.attestation;
-    delete cco.publicKey?.rp.id;
-
-    const webauthResp = await webauthnCreate(cco).catch(() => {
-      updateWithAnim(registerErrorMessage, 'Registration canceled');
-      throw new Error('Registration canceled');
-    });
-
-    console.log('webauthCreateResp', webauthResp);
-    const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/register/verify`, {
-      method: 'POST',
-      headers: {
-        'Content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        resp: webauthResp.toJSON(),
-        id,
-      }),
-    });
-
-    const verifyJson = await verifyResp.json();
-    if (!verifyResp.ok) {
-      await updateWithAnim(registerErrorMessage, verifyJson.error);
-      return;
-    }
-    user.value = verifyJson.user;
-    console.log('Verify Json Reg', verifyJson);
-    document.cookie = `session=${verifyJson.session}`;
-    closeLoginPrompt();
+    await register(states.username.value, states.name.value);
+    closePrompt();
+  } catch (e) {
+    if (e instanceof Error) updateWithAnim(registerErrorMessage, e.message);
   } finally {
     registerLoading.value = false;
   }
@@ -120,66 +67,13 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
   authLoading.value = true;
   try {
-    const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/authenticate`, {
-      method: 'POST',
-      headers: {
-        'Content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: states.username.value,
-      }),
-    });
-    const json = await response.json();
-    if (!response.ok) {
-      updateWithAnim(authenticateErrorMessage, json.error);
-      return;
-    }
-    const id: string = json.id;
-    const gco = parseRequestOptionsFromJSON({
-      publicKey: json.options,
-    });
-    console.log('gco', gco);
-
-    const webauthResp = await webauthnGet(gco).catch(() => {
-      updateWithAnim(authenticateErrorMessage, 'Authentication canceled');
-      throw new Error('Authentication canceled');
-    });
-
-    console.log('webauthGetResp', webauthResp);
-
-    const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/authenticate/verify`, {
-      method: 'POST',
-      headers: {
-        'Content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        resp: webauthResp.toJSON(),
-        id,
-      }),
-    });
-
-    const verifyJson = await verifyResp.json();
-    if (!verifyResp.ok) {
-      updateWithAnim(authenticateErrorMessage, verifyJson.error);
-      return;
-    }
-    user.value = verifyJson.user;
-    console.log('Verify Json', verifyJson);
-    document.cookie = `session=${verifyJson.session}`;
-    closeLoginPrompt();
+    await login(states.username.value);
+    closePrompt();
+  } catch (e) {
+    if (e instanceof Error) updateWithAnim(authenticateErrorMessage, e.message);
   } finally {
     authLoading.value = false;
   }
-}
-
-async function logout() {
-  await fetch(`${import.meta.env.VITE_SERVER_ADDR}/logout`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  user.value = null;
-  document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-  // invalidate session
 }
 </script>
 <template>
@@ -242,7 +136,7 @@ async function logout() {
           :resolver="registerResolver"
           :initial-values="registerIntial"
           :validate-on-value-update="false"
-          @submit="register"
+          @submit="registration"
         >
           <div class="flex flex-col gap-2">
             <InputText

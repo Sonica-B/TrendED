@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { user } from '@/lib/store';
+import { user } from '@/lib/auth';
 import { Course } from '@lib/types.ts';
 import { Button, AutoComplete, DataTable, Divider, Column } from 'primevue';
 import { computed, ref, type Ref } from 'vue';

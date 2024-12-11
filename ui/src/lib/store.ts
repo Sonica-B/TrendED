@@ -1,8 +1,6 @@
-import { Ref, ref } from 'vue';
+import { Ref } from 'vue';
 import { computedAsync } from '@vueuse/core';
-import { Job, User } from './types';
-
-export const user: Ref<User | null> = ref(null);
+import { Job } from './types';
 
 export const jobs: Ref<Job[] | null> = computedAsync(
   async () => {
