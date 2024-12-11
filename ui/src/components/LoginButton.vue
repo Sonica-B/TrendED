@@ -53,7 +53,7 @@ async function registration({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
   registerLoading.value = true;
   try {
-    await register(states.username.value, states.name.value);
+    await register(states.username.value ?? '', states.name.value ?? '');
     closePrompt();
   } catch (e) {
     if (e instanceof Error) updateWithAnim(registerErrorMessage, e.message);
@@ -67,7 +67,7 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
   if (!valid) return;
   authLoading.value = true;
   try {
-    await login(states.username.value);
+    await login(states.username.value ?? '');
     closePrompt();
   } catch (e) {
     if (e instanceof Error) updateWithAnim(authenticateErrorMessage, e.message);
@@ -113,6 +113,7 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
               <Button
                 variant="text"
                 label="Create Account"
+                :disabled="authLoading"
                 @click="
                   () => {
                     registerIntial = { username: $form.username.value };
@@ -121,7 +122,7 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
                   }
                 "
               />
-              <Button type="submit" label="Sign In" />
+              <Button type="submit" label="Sign In" :disabled="authLoading" />
             </div>
           </div>
           <ProgressBar
@@ -163,9 +164,14 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
               {{ registerErrorMessage }}
             </Message>
             <div class="flex gap-2">
-              <Button variant="text" label="Back" @click="openLoginPrompt" />
+              <Button
+                variant="text"
+                label="Back"
+                :disabled="registerLoading"
+                @click="openLoginPrompt"
+              />
               <span class="flex-grow" />
-              <Button type="submit" label="Create Account" />
+              <Button type="submit" label="Create Account" :disabled="registerLoading" />
             </div>
           </div>
           <ProgressBar
