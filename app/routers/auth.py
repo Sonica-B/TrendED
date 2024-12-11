@@ -26,7 +26,7 @@ class User(UserResponse):
 
 
 rp_id = "localhost"
-expected_origin = "http://localhost:5173"
+expected_origin = "http://localhost:8000"
 
 
 class Database:
