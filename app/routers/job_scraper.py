@@ -1,36 +1,11 @@
-
-import json
 from fastapi import APIRouter, Query
 from utils.azure_blob_storage import container_client
-from utils.comparator import extract_dept_courses, extract_job_descriptions, find_top_n_jobs_cosine
+from utils.comparator import extract_job_descriptions, find_top_n_jobs_cosine
+import json
 
 router = APIRouter()
 
-@router.get("/courses/get_departments")
-async def get_departments():
-    """Fetch all unique departments from WPI courses."""
-    blob_client = container_client.get_blob_client("wpi_courses.json")
-    try:
-        course_data = blob_client.download_blob().readall()
-        courses = json.loads(course_data)
-        departments = list(set(course["Department"] for course in courses))
-        return departments
-    except Exception as e:
-        return {"error": str(e)}
-
-@router.get("/courses/get_courses")
-async def get_courses(department: str = Query(...)):
-    """Fetch courses for a specific department."""
-    blob_client = container_client.get_blob_client("wpi_courses.json")
-    try:
-        course_data = blob_client.download_blob().readall()
-        courses = json.loads(course_data)
-        filtered_courses = [course for course in courses if course["Department"] == department]
-        return filtered_courses
-    except Exception as e:
-        return {"error": str(e)}
-
-@router.get("/jobs/find_jobs")
+@router.get("/find_jobs")
 async def find_jobs(courses: str = Query(...), top_n: int = Query(5)):
     """Find top N jobs based on selected courses."""
     blob_client_courses = container_client.get_blob_client("wpi_courses.json")
@@ -45,44 +20,13 @@ async def find_jobs(courses: str = Query(...), top_n: int = Query(5)):
         selected_course_codes = courses.split(",")
         selected_courses = [course for course in course_data if course["Code"] in selected_course_codes]
 
-        # Perform comparison
+        # Extract descriptions for matching
         course_descriptions = [course["Description"] for course in selected_courses]
         job_descriptions = extract_job_descriptions(job_data)
-        top_jobs = find_top_n_jobs_cosine(course_descriptions, job_descriptions, top_n)
+
+        # Perform comparison and find top jobs
+        top_jobs = find_top_n_jobs_cosine(course_descriptions, job_descriptions, [1] * len(selected_courses), top_n)
 
         return [job[0] for job in top_jobs]
     except Exception as e:
         return {"error": str(e)}
-
-# @router.get("/scrape_jobs/")
-# async def scrape_jobs(query: str = Query(...), location: str = Query(...), pages: int = 5):
-#     """
-#     Scrape jobs using Adzuna API based on the user's query and location.
-#     """
-#     all_jobs = []
-#     for page in range(1, pages + 1):
-#         # Fetch jobs from Adzuna API
-#         results = fetch(query, location, page)
-#         if results:
-#             jobs = parse(results)
-#             all_jobs.extend(jobs)
-#
-#     # Save the results to a temporary JSON file
-#     local_file_path = "adzunaAPI_jobs.json"
-#     save_to_json(all_jobs, local_file_path)
-#
-#     # Upload the JSON file to Azure Blob Storage, overwriting the existing file
-#     upload_to_blob(local_file_path, "adzunaAPI_jobs.json")
-#
-#     return {"message": f"Scraped {len(all_jobs)} job postings and updated Azure Blob Storage."}
-#
-# @router.get("/get_postings")
-# async def get_job_postings():
-#     """Fetch job postings from Azure Blob Storage."""
-#     blob_client = container_client.get_blob_client("adzunaAPI_jobs.json")
-#     try:
-#         job_data = blob_client.download_blob().readall()
-#         jobs = json.loads(job_data)
-#         return jobs
-#     except Exception as e:
-#         return {"error": str(e)}

@@ -1,14 +1,11 @@
-// Populate departments on page load
 document.addEventListener("DOMContentLoaded", async () => {
     try {
-        // Fetch departments from Azure Blob
         const response = await fetch("/courses/get_departments");
         if (!response.ok) {
             throw new Error("Failed to fetch departments.");
         }
         const departments = await response.json();
 
-        // Populate department dropdown
         const departmentSelect = document.getElementById("departments");
         departments.forEach((dept) => {
             const option = document.createElement("option");
@@ -17,7 +14,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             departmentSelect.appendChild(option);
         });
 
-        // Add change event listener to load courses for selected department
         departmentSelect.addEventListener("change", async () => {
             const selectedDept = departmentSelect.value;
             await loadCourses(selectedDept);
@@ -27,7 +23,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// Load courses based on selected department
 async function loadCourses(department) {
     try {
         const response = await fetch(`/courses/get_courses?department=${department}`);
@@ -36,30 +31,29 @@ async function loadCourses(department) {
         }
         const courses = await response.json();
 
-        // Populate courses dropdown
-        const courseSelect = document.getElementById("courses");
-        courseSelect.innerHTML = ""; // Clear existing options
+        const courseList = document.getElementById("course-list");
+        courseList.innerHTML = ""; // Clear existing content
         courses.forEach((course) => {
-            const option = document.createElement("option");
-            option.value = course.Code;
-            option.textContent = `${course.Code} - ${course.Title}`;
-            courseSelect.appendChild(option);
+            const listItem = document.createElement("li");
+            listItem.innerHTML = `
+                <input type="checkbox" value="${course.Code}" id="${course.Code}">
+                <label for="${course.Code}">${course.Code} - ${course.Title}</label>
+            `;
+            courseList.appendChild(listItem);
         });
     } catch (error) {
         console.error("Error fetching courses:", error.message);
     }
 }
 
-// Handle form submission
 document.getElementById("course-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const selectedCourses = Array.from(document.getElementById("courses").selectedOptions).map(
-        (option) => option.value
-    );
+
+    const selectedCourses = Array.from(document.querySelectorAll("#course-list input[type='checkbox']:checked"))
+        .map((checkbox) => checkbox.value);
     const topN = document.getElementById("top-n").value;
 
     try {
-        // Fetch top job postings based on selected courses
         const response = await fetch(`/jobs/find_jobs?courses=${selectedCourses.join(",")}&top_n=${topN}`);
         if (!response.ok) {
             throw new Error("Failed to fetch job postings.");
@@ -74,7 +68,7 @@ document.getElementById("course-form").addEventListener("submit", async (e) => {
 
 function displayJobPostings(jobs) {
     const jobResults = document.getElementById("job-results");
-    jobResults.innerHTML = ""; // Clear existing content
+    jobResults.innerHTML = "";
 
     if (jobs.length === 0) {
         jobResults.innerHTML = "<p>No job postings found.</p>";
