@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendEd Pathfinder</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>TrendEd Pathfinder</h1>
+        <p>Select a department and courses to find the most relevant job postings.</p>
+    </header>
+    <main>
+        <section id="course-selection">
+            <h2>Course Selection</h2>
+            <form id="course-form">
+                <label for="departments">Select Department:</label>
+                <select id="departments" name="departments"></select>
+
+                <h3>Select Courses:</h3>
+                <ul id="course-list"></ul>
+
+                <label for="top-n">Number of Jobs to Display:</label>
+                <input type="number" id="top-n" name="top-n" min="1" value="5">
+                <button type="submit">Find Jobs</button>
+            </form>
+            <div id="job-results" class="card-container"></div>
+        </section>
+    </main>
+    <footer>
+        <p>© 2024 TrendEd Pathfinder Team</p>
+    </footer>
+    <script src="scripts.js"></script>
+</body>
+</html>
