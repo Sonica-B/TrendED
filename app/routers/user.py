@@ -11,13 +11,15 @@ from pydantic import BaseModel
 from webauthn.helpers.structs import PublicKeyCredentialDescriptor
 
 
-class UserResponse(BaseModel):
+class User(BaseModel):
     id: str
     name: str
     username: str
+    courseIds: list[str]
+    skills: list[str]
 
 
-class User(UserResponse):
+class DatabaseUser(User):
     sessions: list[str]
     # for webauthn
     crediential_id: str
@@ -26,21 +28,21 @@ class User(UserResponse):
 
 
 rp_id = "localhost"
-expected_origin = "http://localhost:8000"
+expected_origin = "http://localhost:5173"
 
 
 class Database:
     def __init__(self, path: str):
-        self.users: list[User] = []
-        self.users_by_id: dict[str, User] = {}
-        self.users_by_username: dict[str, User] = {}
+        self.users: list[DatabaseUser] = []
+        self.users_by_id: dict[str, DatabaseUser] = {}
+        self.users_by_username: dict[str, DatabaseUser] = {}
         self.path = path
-        self.active_sessions: dict[str, User] = {}
+        self.active_sessions: dict[str, DatabaseUser] = {}
         try:
             with open(self.path, "r") as f:
                 data = json.load(f)
                 for user in data["users"]:
-                    self.add_user(User(**user))
+                    self.add_user(DatabaseUser(**user))
         except Exception:
             pass
 
@@ -48,21 +50,21 @@ class Database:
         with open(self.path, "w") as f:
             json.dump({"users": [user.__dict__ for user in self.users]}, f)
 
-    def add_user(self, user: User):
+    def add_user(self, user: DatabaseUser):
         self.users.append(user)
         self.users_by_id[user.id] = user
         self.users_by_username[user.username] = user
         for session in user.sessions:
             self.active_sessions[session] = user
 
-    def remove_user(self, user: User):
+    def remove_user(self, user: DatabaseUser):
         self.users.remove(user)
         del self.users_by_id[user.id]
         del self.users_by_username[user.username]
         for session in user.sessions:
             del self.active_sessions[session]
 
-    def add_user_session(self, user: User, user_session: str):
+    def add_user_session(self, user: DatabaseUser, user_session: str):
         if user_session in user.sessions:
             return
         user.sessions.append(user_session)
@@ -75,13 +77,13 @@ class Database:
         user.sessions.remove(user_session)
         del self.active_sessions[user_session]
 
-    def get_user_by_id(self, id: str) -> User | None:
+    def get_user_by_id(self, id: str) -> DatabaseUser | None:
         return self.users_by_id.get(id)
 
-    def get_user_by_username(self, username: str) -> User | None:
+    def get_user_by_username(self, username: str) -> DatabaseUser | None:
         return self.users_by_username.get(username)
 
-    def get_user_by_session(self, session: str) -> User | None:
+    def get_user_by_session(self, session: str) -> DatabaseUser | None:
         return self.active_sessions.get(session)
 
 
@@ -94,14 +96,29 @@ router = APIRouter()
 
 
 # check session cookie
-@router.get("/user")
+@router.get("/info")
 async def get_user(session: str = Cookie(None)):
     user = database.get_user_by_session(session)
     if user is None:
         return JSONResponse(
             content=jsonable_encoder({"error": "Invalid session"}), status_code=401
         )
-    return JSONResponse(content=jsonable_encoder(UserResponse(**user.__dict__)))
+    return JSONResponse(content=jsonable_encoder(User(**user.__dict__)))
+
+
+@router.post("/update")
+async def update_user(new_user: User, session: str = Cookie(None)):
+    print(session)
+    user = database.get_user_by_session(session)
+    if user is None:
+        return JSONResponse(
+            content=jsonable_encoder({"error": "Invalid session"}), status_code=401
+        )
+    user.name = new_user.name
+    user.username = new_user.username
+    user.courseIds = new_user.courseIds
+    user.skills = new_user.skills
+    database.save()
 
 
 class RegisterArgs(BaseModel):
@@ -111,26 +128,28 @@ class RegisterArgs(BaseModel):
 
 @router.post("/register")
 async def register(userargs: RegisterArgs):
-    print(userargs)
     user = database.get_user_by_username(userargs.username)
-    if user is not None and len(user.public_key) > 0:
-        return JSONResponse(
-            content=jsonable_encoder({"error": "User already exists"}), status_code=400
-        )
     if user is not None:
-        new_user = user
-    else:
-        new_user = User(
-            id=str(uuid4()),
-            name=userargs.name,
-            username=userargs.username,
-            sessions=[],
-            sign_in_count=0,
-            crediential_id="",
-            public_key="",
-        )
-        database.add_user(new_user)
-        database.save()
+        if len(user.public_key) > 0:
+            return JSONResponse(
+                content=jsonable_encoder({"error": "User already exists"}),
+                status_code=400,
+            )
+        database.remove_user(user)
+    new_user = DatabaseUser(
+        id=str(uuid4()),
+        name=userargs.name,
+        username=userargs.username,
+        courseIds=[],
+        skills=[],
+        # Databse info
+        sessions=[],
+        sign_in_count=0,
+        crediential_id="",
+        public_key="",
+    )
+    database.add_user(new_user)
+    database.save()
     options = webauthn.generate_registration_options(
         rp_id=rp_id,
         rp_name="Test",
@@ -176,7 +195,7 @@ async def register_verify(verifyargs: VerifyArgs):
         return JSONResponse(
             content=jsonable_encoder(
                 {
-                    "user": UserResponse(**user.__dict__),
+                    "user": User(**user.__dict__),
                     "session": session,
                 }
             )
@@ -239,7 +258,7 @@ async def login_verify(authverifyargs: AuthenticateVerifyArgs):
         return JSONResponse(
             content=jsonable_encoder(
                 {
-                    "user": jsonable_encoder(UserResponse(**user.__dict__)),
+                    "user": jsonable_encoder(User(**user.__dict__)),
                     "session": session,
                 }
             )

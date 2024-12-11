@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Query
-from utils.azure_blob_storage import container_client
 import json
 
+from fastapi import APIRouter, Query
+
+from utils.azure_blob_storage import container_client
+
 router = APIRouter()
+
 
 @router.get("/get_departments")
 async def get_departments():
@@ -15,6 +18,7 @@ async def get_departments():
     except Exception as e:
         return {"error": str(e)}
 
+
 @router.get("/get_courses")
 async def get_courses(department: str = Query(...)):
     """Fetch courses for a specific department."""
@@ -22,8 +26,14 @@ async def get_courses(department: str = Query(...)):
     try:
         course_data = json.loads(blob_client.download_blob().readall())
         filtered_courses = [
-            {"Code": course["Code"], "Title": course["Title"], "Description": course["Description"]}
-            for course in course_data if course["Department"] == department
+            {
+                "code": course["Code"],
+                "title": course["Title"],
+                "description": course["Description"],
+                "department": course["Department"],
+            }
+            for course in course_data
+            if department == "All" or course["Department"] == department
         ]
         return filtered_courses
     except Exception as e:

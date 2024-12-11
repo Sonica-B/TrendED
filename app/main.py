@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import auth, comparator, course_scraper, job_scraper
+from app.routers import courses, jobs, user
 
 app = FastAPI(title="TrendEd Pathfinder API")
 
@@ -17,10 +17,9 @@ app.add_middleware(
 )
 
 # Include Routers
-app.include_router(course_scraper.router, prefix="/courses", tags=["Course Scraping"])
-app.include_router(job_scraper.router, prefix="/jobs", tags=["Job Matching"])
-app.include_router(comparator.router, prefix="/compare", tags=["Comparison"])
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(courses.router, prefix="/courses", tags=["Course Api"])
+app.include_router(jobs.router, prefix="/jobs", tags=["Job Api"])
+app.include_router(user.router, prefix="/user", tags=["User Api"])
 
 
 # Update the path to the actual static files location

@@ -1,28 +1,47 @@
-import { Ref } from 'vue';
+import { type Ref, nextTick } from 'vue';
 import { computedAsync } from '@vueuse/core';
 import { User } from './types';
 import { router } from './router';
+import {
+  parseCreationOptionsFromJSON,
+  create as webauthnCreate,
+  get as webauthnGet,
+  parseRequestOptionsFromJSON,
+} from '@github/webauthn-json/browser-ponyfill';
 
 // pull out promise so we can await it in isAuth
-const userPromise = async () => {
-  const res = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/user`, {
-    credentials: 'include',
-  });
-  if (res.ok) {
-    return await res.json();
-  } else {
-    return null;
-  }
-};
-export const user: Ref<User | null> = computedAsync(userPromise, null);
+const userPromise: Promise<User | null> = fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/info`, {
+  credentials: 'include',
+}).then((res) => (res.ok ? res.json() : null));
 
+export const user: Ref<User | null> = computedAsync(async () => await userPromise, null);
+
+export async function getUser() {
+  await userPromise;
+  await nextTick();
+  return user.value;
+}
+
+export async function updateUser() {
+  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/update`, {
+    credentials: 'include',
+    method: 'POST',
+    body: JSON.stringify(user.value),
+  });
+  const json = await response.json();
+  if (!response.ok) {
+    throw new Error(json.error);
+  }
+  user.value = json;
+}
+
+// Auth
 export async function isAuth() {
-  await userPromise();
-  return user.value !== null;
+  return (await getUser()) !== null;
 }
 
 export async function logout() {
-  await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/logout`, {
+  await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/logout`, {
     method: 'POST',
     credentials: 'include',
   });
@@ -33,15 +52,8 @@ export async function logout() {
   }
 }
 
-import {
-  parseCreationOptionsFromJSON,
-  create as webauthnCreate,
-  get as webauthnGet,
-  parseRequestOptionsFromJSON,
-} from '@github/webauthn-json/browser-ponyfill';
-
 export async function login(username: string) {
-  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/login`, {
+  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/login`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
@@ -66,7 +78,7 @@ export async function login(username: string) {
 
   console.log('webauthGetResp', webauthResp);
 
-  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/login_verify`, {
+  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/login_verify`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
@@ -86,8 +98,9 @@ export async function login(username: string) {
   document.cookie = `session=${verifyJson.session}`;
   return user.value;
 }
+
 export async function register(username: string, name: string) {
-  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/register`, {
+  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/register`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
@@ -115,7 +128,7 @@ export async function register(username: string, name: string) {
   });
 
   console.log('webauthCreateResp', webauthResp);
-  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/register_verify`, {
+  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/register_verify`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
