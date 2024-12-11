@@ -5,7 +5,7 @@ import { router } from './router';
 
 // pull out promise so we can await it in isAuth
 const userPromise = async () => {
-  const res = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/api/user`, {
+  const res = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/user`, {
     credentials: 'include',
   });
   if (res.ok) {
@@ -22,7 +22,7 @@ export async function isAuth() {
 }
 
 export async function logout() {
-  await fetch(`${import.meta.env.VITE_SERVER_ADDR}/logout`, {
+  await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });
@@ -41,7 +41,7 @@ import {
 } from '@github/webauthn-json/browser-ponyfill';
 
 export async function login(username: string) {
-  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/authenticate`, {
+  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
@@ -66,7 +66,7 @@ export async function login(username: string) {
 
   console.log('webauthGetResp', webauthResp);
 
-  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/authenticate/verify`, {
+  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/login_verify`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
@@ -87,7 +87,7 @@ export async function login(username: string) {
   return user.value;
 }
 export async function register(username: string, name: string) {
-  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/register`, {
+  const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/register`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
@@ -115,7 +115,7 @@ export async function register(username: string, name: string) {
   });
 
   console.log('webauthCreateResp', webauthResp);
-  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/register/verify`, {
+  const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/auth/register_verify`, {
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
