@@ -79,8 +79,13 @@ def save_to_json(data, file_path):
 
 
 def main():
-    queries = ["Product Manager", "Business Analyst", "Technology Consultant"]
+    # Load technical keywords
+    with open("data/json/keywords.json", 'r', encoding='utf-8') as json_file:
+        keywords_data = json.load(json_file)
+    queries = keywords_data["technical_keywords"]
+    #queries = ["Product Manager", "Business Analyst", "Technology Consultant"]
     location = "New York, NY"
+
     csv_file = "adzunaAPI_jobs.csv"
     json_file = "adzunaAPI_jobs.json"
     num_of_pages = 5

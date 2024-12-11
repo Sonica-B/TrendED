@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendEd Pathfinder</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>TrendEd Pathfinder</h1>
+        <p>Helping students find internships and job opportunities aligned with their career goals.</p>
+    </header>
+    <main>
+        <section id="job-matching">
+            <h2>Job Matching</h2>
+            <form id="job-form">
+                <label for="query">Job Title:</label>
+                <input type="text" id="query" name="query" placeholder="e.g., Python Developer">
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" placeholder="e.g., New York">
+                <button type="submit">Find Jobs</button>
+            </form>
+            <div id="job-results" class="card-container"></div>
+        </section>
+        <section id="course-matching">
+            <h2>Course Matching</h2>
+            <form id="course-form">
+                <label for="dept-code">Department Code:</label>
+                <input type="text" id="dept-code" name="dept-code" placeholder="e.g., CS">
+                <button type="submit">Find Matching Courses</button>
+            </form>
+            <div id="course-results"></div>
+        </section>
+    </main>
+    <footer>
+        <p>© 2024 TrendEd Pathfinder Team</p>
+    </footer>
+    <script src="scripts.js"></script>
+</body>
+</html>
