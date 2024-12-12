@@ -62,7 +62,7 @@ export async function login(username: string) {
       'Content-type': 'application/json',
     },
     body: JSON.stringify({
-      username,
+      username: username.trim(),
     }),
   });
   const json = await response.json();
@@ -105,8 +105,8 @@ export async function register(username: string, name: string) {
       'Content-type': 'application/json',
     },
     body: JSON.stringify({
-      name,
-      username,
+      name: name.trim(),
+      username: username.trim(),
     }),
   });
   const json = await response.json();

@@ -26,26 +26,30 @@ watchImmediate(user, () => {
   nextTick(updateJobs);
 });
 
-const jobs: Ref<Job[] | null> = ref(null);
-const loading = ref(false);
+const jobs: Ref<Job[] | 'loading' | 'no-jobs' | 'error'> = ref('loading');
 
 async function updateJobs() {
-  loading.value = true;
+  jobs.value = 'loading';
+  const courses = [...selectedCourses.entries()]
+    .filter(([, selected]) => selected)
+    .map(([course]) => course);
+  if (courses.length === 0) {
+    jobs.value = 'no-jobs';
+    return;
+  }
   const res = await fetch(
     `${import.meta.env.VITE_SERVER_ADDR}/jobs/find_jobs?${new URLSearchParams({
-      courses: [...selectedCourses.entries()]
-        .filter(([, selected]) => selected)
-        .map(([course]) => course)
-        .join(','),
+      courses: courses.join(','),
       top_n: (50).toString(),
     }).toString()}`
   );
-  loading.value = false;
-
-  if (!res.ok) return null;
 
   const json = await res.json();
-  if (json.error) return null;
+
+  if (!res.ok) {
+    jobs.value = 'error';
+    return;
+  }
 
   jobs.value = json;
 }
@@ -67,7 +71,7 @@ const filteredCourses = computed(() => {
   <div class="justify-center gap-8 sm:flex sm:h-full sm:flex-row sm:overflow-y-hidden">
     <section class="flex flex-col p-4 sm:h-full sm:flex-shrink-0 sm:self-start sm:p-8 sm:pr-0">
       <h2 class="text-2xl">Filter Courses</h2>
-      <Button variant="text" label="Update" :loading @click="updateJobs" />
+      <Button variant="text" label="Update" :loading="jobs === 'loading'" @click="updateJobs" />
       <Divider />
       <div class="space-y-4">
         <InputText v-model="filter" placeholder="Filter" type="search" />
@@ -93,10 +97,17 @@ const filteredCourses = computed(() => {
     <section
       class="flex h-full w-full max-w-6xl flex-col gap-8 p-4 sm:overflow-y-auto sm:p-8 sm:pl-0"
     >
-      <div v-if="jobs === null" class="flex w-full justify-center">
+      <div v-if="jobs === 'loading'" class="flex w-full justify-center">
         <ProgressSpinner stroke-width="4" />
       </div>
-      <Card v-for="(job, i) in jobs" :key="i">
+      <div v-else-if="jobs === 'no-jobs'" class="text-center">
+        <p class="pb-2 text-2xl">No jobs found.</p>
+        <p class="text-xl text-muted-color">Make sure to select at least one course</p>
+      </div>
+      <div v-else-if="jobs === 'error'" class="w-full text-center">
+        <p class="text-xl">An unknown error occured when trying to load jobs.</p>
+      </div>
+      <Card v-for="(job, i) in jobs" v-else :key="i">
         <template #title>
           <a :href="job.url" class="underline hover:text-primary">
             {{ job.title }}

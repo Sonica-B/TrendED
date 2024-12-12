@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick, type Ref, defineProps } from 'vue';
-import { Menu, Message, Dialog, Button, InputText, ProgressBar } from 'primevue';
+import { Menu, Message, FloatLabel, Dialog, Button, InputText, ProgressBar } from 'primevue';
 import { Form, type FormResolverOptions, type FormSubmitEvent } from '@primevue/forms';
 import { user, logout, login, register } from '@/lib/auth';
 import { supported as webauthnSupported } from '@github/webauthn-json';
@@ -124,13 +124,18 @@ addEventListener('keydown', (e) => {
           @submit="authenticate"
         >
           <div class="flex flex-col gap-2">
-            <InputText
-              ref="signInFocus"
-              name="username"
-              class="flex-auto"
-              placeholder="jsmith"
-              autocomplete="off"
-            />
+            <FloatLabel variant="on">
+              <label for="username">Username</label>
+              <InputText
+                ref="signInFocus"
+                name="username"
+                class="p-filled flex-auto"
+                placeholder="jsmith"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="none"
+              />
+            </FloatLabel>
             <Message v-if="$form.username?.invalid" severity="error" size="small" variant="simple">
               {{ $form.username.error?.message }}
             </Message>
@@ -174,17 +179,31 @@ addEventListener('keydown', (e) => {
           @submit="registration"
         >
           <div class="flex flex-col gap-2">
-            <InputText
-              ref="registerFocus"
-              name="username"
-              class="flex-auto"
-              placeholder="jsmith"
-              autocomplete="off"
-            />
+            <FloatLabel variant="on">
+              <label for="username">Username</label>
+              <InputText
+                id="username"
+                ref="registerFocus"
+                name="username"
+                class="flex-auto p-filled"
+                placeholder="jsmith"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="none"
+              />
+            </FloatLabel>
             <Message v-if="$form.username?.invalid" severity="error" size="small" variant="simple">
               {{ $form.username.error?.message }}
             </Message>
-            <InputText name="name" class="flex-auto" placeholder="John Smith" autocomplete="off" />
+            <FloatLabel variant="on">
+              <label for="name">Name</label>
+              <InputText
+                name="name"
+                class="flex-auto p-filled"
+                placeholder="John Smith"
+                autocomplete="off"
+              />
+            </FloatLabel>
             <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
               {{ $form.name.error?.message }}
             </Message>

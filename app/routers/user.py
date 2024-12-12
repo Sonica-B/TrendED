@@ -27,8 +27,8 @@ class DatabaseUser(User):
     sign_in_count: int
 
 
-rp_id = "localhost"
-expected_origin = "http://localhost:5173"
+rp_id = "trended.xyven.dev"
+expected_origin = "https://trended.xyven.dev"
 
 
 class Database:
