@@ -2,7 +2,16 @@
 import { user } from '@/lib/auth';
 import { Job } from '@/lib/types';
 import { watchImmediate } from '@vueuse/core';
-import { Button, Card, Divider, ProgressSpinner, InputText, ToggleSwitch } from 'primevue';
+import {
+  Button,
+  Card,
+  Divider,
+  FloatLabel,
+  ProgressBar,
+  ProgressSpinner,
+  InputText,
+  ToggleSwitch,
+} from 'primevue';
 import { nextTick, reactive, ref, computed, type Ref, type Reactive } from 'vue';
 import ufuzzy from '@leeoniya/ufuzzy';
 
@@ -37,6 +46,7 @@ async function updateJobs() {
     jobs.value = 'no-jobs';
     return;
   }
+  prevCourses.value = [...selectedCourses.entries()];
   const res = await fetch(
     `${import.meta.env.VITE_SERVER_ADDR}/jobs/find_jobs?${new URLSearchParams({
       courses: courses.join(','),
@@ -66,17 +76,37 @@ const filteredCourses = computed(() => {
   const courses = [...selectedCourses.keys()];
   return courses_uf.search(courses, filter.value, 1)[0]?.map((i) => courses[i]) ?? courses;
 });
+const prevCourses: Ref<[string, boolean][]> = ref([]);
+const updatePending = computed(
+  () =>
+    prevCourses.value.length !== selectedCourses.size ||
+    !prevCourses.value.every(([course, selected]) => selectedCourses.get(course) === selected)
+);
 </script>
 <template>
   <div class="justify-center gap-8 sm:flex sm:h-full sm:flex-row sm:overflow-y-hidden">
     <section class="flex flex-col p-4 sm:h-full sm:flex-shrink-0 sm:self-start sm:p-8 sm:pr-0">
-      <h2 class="text-2xl">Filter Courses</h2>
-      <Button variant="text" label="Update" :loading="jobs === 'loading'" @click="updateJobs" />
+      <Button
+        label="Find Jobs"
+        :disabled="jobs === 'loading'"
+        :severity="updatePending ? 'primary' : 'secondary'"
+        @click="updateJobs"
+      />
+      <ProgressBar
+        :class="{
+          '!opacity-0': jobs !== 'loading',
+        }"
+        mode="indeterminate"
+        class="h-1 opacity-100 transition-opacity duration-200"
+      />
       <Divider />
       <div class="space-y-4">
-        <InputText v-model="filter" placeholder="Filter" type="search" />
+        <FloatLabel variant="on">
+          <label for="filtercourses">Filter Courses</label>
+          <InputText id="filtercourses" v-model="filter" type="search" />
+        </FloatLabel>
         <div class="flex">
-          <span class="font-bold">Toggle All</span>
+          <span class="font-bold">Toggle Shown</span>
           <span class="flex-grow" />
           <ToggleSwitch :model-value="true" @value-change="toggleAll" />
         </div>
