@@ -10,6 +10,18 @@
   --p-primary-800: #065f46;
   --p-primary-900: #064e3b;
   --p-primary-950: #022c22;
+  /* --p-primary-50: #fff6e8; */
+  /* --p-primary-100: #fee3bb; */
+  /* --p-primary-200: #fdd08d; */
+  /* --p-primary-300: #fcbd60; */
+  /* --p-primary-400: #fbaa33; */
+  /* --p-primary-500: #fa9805; */
+  /* --p-primary-600: #cc7c04; */
+  /* --p-primary-700: #9f6103; */
+  /* --p-primary-800: #714502; */
+  /* --p-primary-900: #442901; */
+  /* --p-primary-950: #170e00; */
+
   --p-surface-0: #ffffff;
   --p-surface-50: #fafafa;
   --p-surface-100: #f4f4f5;
@@ -22,6 +34,18 @@
   --p-surface-800: #27272a;
   --p-surface-900: #18181b;
   --p-surface-950: #09090b;
+  /* --p-surface-0: #f8f4eb; */
+  /* --p-surface-50: #e9e7e1; */
+  /* --p-surface-100: #dfdcd4; */
+  /* --p-surface-200: #c6c3bc; */
+  /* --p-surface-300: #aeaba5; */
+  /* --p-surface-400: #95928d; */
+  /* --p-surface-500: #7c7a76; */
+  /* --p-surface-600: #63625e; */
+  /* --p-surface-700: #4a4946; */
+  /* --p-surface-800: #32312f; */
+  /* --p-surface-900: #191817; */
+  /* --p-surface-950: #0d0c0c; */
   --p-content-border-radius: 6px;
 
   font-synthesis: none;
@@ -30,8 +54,19 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  background-color: var(--p-text-color);
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23777'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>");
+  background-size: 20px 20px;
+  height: 20px;
+  width: 20px;
+}
+
 /* Light */
 :root {
+  font-family: 'Raleway Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --p-primary-color: var(--p-primary-500);
   --p-primary-contrast-color: var(--p-surface-0);
   --p-primary-hover-color: var(--p-primary-600);
@@ -47,7 +82,7 @@
   --p-text-hover-color: var(--p-surface-800);
   --p-text-muted-color: var(--p-surface-500);
   --p-text-hover-muted-color: var(--p-surface-600);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /* Dark */
@@ -68,5 +103,6 @@
     --p-text-hover-color: var(--p-surface-0);
     --p-text-muted-color: var(--p-surface-400);
     --p-text-hover-muted-color: var(--p-surface-300);
+    color-scheme: dark;
   }
 }

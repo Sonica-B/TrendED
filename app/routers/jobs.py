@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
 
 from utils.azure_blob_storage import container_client
 from utils.comparator import extract_job_descriptions, find_top_n_jobs_cosine
@@ -34,6 +35,15 @@ async def find_jobs(courses: str = Query(...), top_n: int = Query(5)):
             course_descriptions, job_descriptions, [1] * len(selected_courses), top_n
         )
 
-        return [job[0] for job in top_jobs]
+        return [
+            {
+                "title": job[0]["Title"],
+                "description": job[0]["Description"],
+                "employer": job[0]["Employer"],
+                "location": job[0]["Location"],
+                "url": job[0]["URL"],
+            }
+            for job in top_jobs
+        ]
     except Exception as e:
-        return {"error": str(e)}
+        return JSONResponse(status_code=500, content={"error": str(e)})

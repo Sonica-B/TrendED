@@ -20,7 +20,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/jobs',
     component: () => import('@pages/JobsView.vue'),
     name: 'Jobs',
-    meta: { icon: 'briefcase', auth: false },
+    meta: { icon: 'briefcase', auth: true },
   },
   {
     path: '/profile',

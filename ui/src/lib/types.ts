@@ -10,9 +10,13 @@ export type User = {
   name: string;
   username: string;
   courseIds: string[];
+  skills: string[];
 };
 
 export type Job = {
   title: string;
-  link: string;
+  description: string;
+  employer: string;
+  location: string;
+  url: string;
 };

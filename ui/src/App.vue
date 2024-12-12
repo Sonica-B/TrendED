@@ -18,7 +18,7 @@ const routes: MenuItem[] = router
 
 <template>
   <Menubar
-    class="fixed left-0 top-0 w-full rounded-none border-0 border-b bg-transparent backdrop-blur"
+    class="fixed left-0 top-0 z-50 w-full rounded-none border-0 border-b bg-surface-100 bg-opacity-50 backdrop-blur-2xl dark:bg-surface-950 dark:bg-opacity-50"
     breakpoint="600px"
     :model="routes"
   >
@@ -46,10 +46,16 @@ const routes: MenuItem[] = router
       </RouterLink>
     </template>
     <template #end>
-      <LoginButton />
+      <LoginButton position="topright" />
     </template>
   </Menubar>
   <main class="h-full pt-14">
-    <RouterView />
+    <div class="h-full overflow-y-auto">
+      <RouterView v-slot="{ Component }">
+        <KeepAlive>
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
+    </div>
   </main>
 </template>

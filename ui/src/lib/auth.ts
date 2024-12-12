@@ -26,6 +26,9 @@ export async function updateUser() {
   const response = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/update`, {
     credentials: 'include',
     method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+    },
     body: JSON.stringify(user.value),
   });
   const json = await response.json();
@@ -70,13 +73,10 @@ export async function login(username: string) {
   const gco = parseRequestOptionsFromJSON({
     publicKey: json.options,
   });
-  console.log('gco', gco);
 
   const webauthResp = await webauthnGet(gco).catch(() => {
     throw new Error('Authentication canceled');
   });
-
-  console.log('webauthGetResp', webauthResp);
 
   const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/login_verify`, {
     method: 'POST',
@@ -94,7 +94,6 @@ export async function login(username: string) {
     throw new Error(verifyJson.error);
   }
   user.value = verifyJson.user;
-  console.log('Verify Json', verifyJson);
   document.cookie = `session=${verifyJson.session}`;
   return user.value;
 }
@@ -118,7 +117,6 @@ export async function register(username: string, name: string) {
   const cco = parseCreationOptionsFromJSON({
     publicKey: json.options,
   });
-  console.log('cco', cco);
 
   delete cco.publicKey?.attestation;
   delete cco.publicKey?.rp.id;
@@ -127,7 +125,6 @@ export async function register(username: string, name: string) {
     throw new Error('Registration canceled');
   });
 
-  console.log('webauthCreateResp', webauthResp);
   const verifyResp = await fetch(`${import.meta.env.VITE_SERVER_ADDR}/user/register_verify`, {
     method: 'POST',
     headers: {
@@ -144,6 +141,5 @@ export async function register(username: string, name: string) {
     throw new Error(verifyJson.error);
   }
   user.value = verifyJson.user;
-  console.log('Verify Json Reg', verifyJson);
   document.cookie = `session=${verifyJson.session}`;
 }

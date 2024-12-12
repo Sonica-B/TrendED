@@ -1,9 +1,30 @@
 <script setup lang="ts">
-import { ref, nextTick, type Ref } from 'vue';
+import { ref, nextTick, type Ref, defineProps } from 'vue';
 import { Menu, Message, Dialog, Button, InputText, ProgressBar } from 'primevue';
 import { Form, type FormResolverOptions, type FormSubmitEvent } from '@primevue/forms';
 import { user, logout, login, register } from '@/lib/auth';
 import { supported as webauthnSupported } from '@github/webauthn-json';
+
+const {
+  position,
+  defaultMode = 'login',
+  afterLogin,
+  afterRegister,
+} = defineProps<{
+  position?:
+    | 'center'
+    | 'top'
+    | 'bottom'
+    | 'left'
+    | 'right'
+    | 'topleft'
+    | 'topright'
+    | 'bottomleft'
+    | 'bottomright';
+  defaultMode?: 'login' | 'register';
+  afterLogin?: () => void;
+  afterRegister?: () => void;
+}>();
 
 const registerErrorMessage = ref('');
 const authenticateErrorMessage = ref('');
@@ -14,12 +35,14 @@ const accountMenu = ref();
 
 function openLoginPrompt() {
   open.value = true;
-  newAccount.value = false;
+  newAccount.value = defaultMode === 'register';
   registerErrorMessage.value = '';
   authenticateErrorMessage.value = '';
-  nextTick(() => {
-    signInFocus.value.$el.focus();
-  });
+  focusFirstInput();
+}
+
+function focusFirstInput() {
+  nextTick(() => (newAccount.value ? registerFocus.value : signInFocus.value).$el.focus());
 }
 
 function closePrompt() {
@@ -27,7 +50,6 @@ function closePrompt() {
 }
 
 function registerResolver({ values }: FormResolverOptions) {
-  console.log(values);
   const errors: Record<string, { message: string }[]> = {};
   if ((values.name?.length ?? 0) < 4) {
     errors.name = [{ message: 'Name must be at least 4 characters long' }];
@@ -45,8 +67,9 @@ async function updateWithAnim(ref: Ref<string>, str: string) {
 }
 
 const signInFocus = ref();
+const signInInitial = ref({});
 const registerFocus = ref();
-const registerIntial = ref({});
+const registerInitial = ref({});
 
 const registerLoading = ref(false);
 async function registration({ valid, states }: FormSubmitEvent) {
@@ -59,6 +82,7 @@ async function registration({ valid, states }: FormSubmitEvent) {
     if (e instanceof Error) updateWithAnim(registerErrorMessage, e.message);
   } finally {
     registerLoading.value = false;
+    afterRegister?.();
   }
 }
 
@@ -73,22 +97,32 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
     if (e instanceof Error) updateWithAnim(authenticateErrorMessage, e.message);
   } finally {
     authLoading.value = false;
+    afterLogin?.();
   }
 }
+
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && open.value) closePrompt();
+});
 </script>
 <template>
   <Dialog
     v-model:visible="open"
     modal
     header="Register"
-    position="topright"
+    :position
     class="overflow-clip bg-opacity-50 p-4 backdrop-blur-2xl"
-    :close-on-escape="true"
     :dismissable-mask="true"
+    :close-on-escape="false"
   >
     <template #container="{}">
       <div v-if="webauthnSupported()" class="grid grid-rows-1 transition-[grid-template-rows]">
-        <Form v-if="!newAccount" v-slot="$form" @submit="authenticate">
+        <Form
+          v-if="!newAccount"
+          v-slot="$form"
+          :initial-values="signInInitial"
+          @submit="authenticate"
+        >
           <div class="flex flex-col gap-2">
             <InputText
               ref="signInFocus"
@@ -116,9 +150,9 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
                 :disabled="authLoading"
                 @click="
                   () => {
-                    registerIntial = { username: $form.username.value };
+                    registerInitial = { username: $form.username.value };
                     newAccount = true;
-                    nextTick(() => registerFocus.$el.focus());
+                    focusFirstInput();
                   }
                 "
               />
@@ -135,7 +169,7 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
           v-else
           v-slot="$form"
           :resolver="registerResolver"
-          :initial-values="registerIntial"
+          :initial-values="registerInitial"
           :validate-on-value-update="false"
           @submit="registration"
         >
@@ -165,10 +199,17 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
             </Message>
             <div class="flex gap-2">
               <Button
+                v-if="defaultMode === 'login'"
                 variant="text"
                 label="Back"
                 :disabled="registerLoading"
-                @click="openLoginPrompt"
+                @click="
+                  () => {
+                    signInInitial = { username: $form.username.value };
+                    newAccount = false;
+                    focusFirstInput();
+                  }
+                "
               />
               <span class="flex-grow" />
               <Button type="submit" label="Create Account" :disabled="registerLoading" />
@@ -186,8 +227,10 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
       </Message>
     </template>
   </Dialog>
-  <Button v-if="user === null" label="Login" @click="openLoginPrompt" />
-  <template v-else>
+  <slot v-if="user === null" name="signin" :open="openLoginPrompt">
+    <Button label="Login" @click="openLoginPrompt" />
+  </slot>
+  <slot v-else name="signout">
     <Button
       variant="text"
       class="flex gap-4 !text-color"
@@ -209,5 +252,5 @@ async function authenticate({ valid, states }: FormSubmitEvent) {
       ]"
       :popup="true"
     />
-  </template>
+  </slot>
 </template>

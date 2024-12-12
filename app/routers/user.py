@@ -108,7 +108,6 @@ async def get_user(session: str = Cookie(None)):
 
 @router.post("/update")
 async def update_user(new_user: User, session: str = Cookie(None)):
-    print(session)
     user = database.get_user_by_session(session)
     if user is None:
         return JSONResponse(
@@ -119,6 +118,7 @@ async def update_user(new_user: User, session: str = Cookie(None)):
     user.courseIds = new_user.courseIds
     user.skills = new_user.skills
     database.save()
+    return JSONResponse(content=jsonable_encoder(User(**user.__dict__)))
 
 
 class RegisterArgs(BaseModel):

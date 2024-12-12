@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, Query
 
 from utils.azure_blob_storage import container_client
+from utils.comparator import TECHNICAL_SKILLS
 
 router = APIRouter()
 
@@ -17,6 +18,12 @@ async def get_departments():
         return departments
     except Exception as e:
         return {"error": str(e)}
+
+
+@router.get("/get_skills")
+async def get_skills():
+    """Fetch all unique skills from WPI courses."""
+    return TECHNICAL_SKILLS
 
 
 @router.get("/get_courses")
