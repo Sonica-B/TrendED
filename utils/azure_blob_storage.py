@@ -6,7 +6,7 @@ from azure.core.exceptions import ResourceNotFoundError
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 # Retrieve connection string from environment variable
-CONNECTION_STRING = "***REMOVED***"
+CONNECTION_STRING = os.getenv('AZURE_STORAGE_KEY')
 if not CONNECTION_STRING:
     raise ValueError("Azure Storage connection string is not set.")
 
