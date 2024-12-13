@@ -5,7 +5,7 @@ import json
 
 base_url = "https://api.adzuna.com/v1/api/jobs/us/search/"
 APP_ID = "4772744a"
-APP_KEY = "***REMOVED***"
+APP_KEY = "4b3246141e23b548d10c0dcc52789d3c"
 
 def fetch(query, location, page):
     params = {
