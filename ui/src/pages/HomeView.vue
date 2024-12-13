@@ -7,7 +7,7 @@ import { Button, Card, ProgressSpinner } from 'primevue';
 import { Ref } from 'vue';
 
 const jobs: Ref<Job[] | 'loading' | 'no-jobs'> = computedAsync(async () => {
-  if (user.value === null) return '';
+  if (user.value === null) return 'loading';
 
   if (user.value.courseIds.length === 0) return 'no-jobs';
 

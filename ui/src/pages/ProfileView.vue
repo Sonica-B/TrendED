@@ -77,7 +77,12 @@ async function removeSkill(skill: string) {
 }
 
 // Courses
-const courses_uf = new ufuzzy({});
+const courses_uf = new ufuzzy({
+  intraMode: 1,
+  intraSub: 1,
+  intraTrn: 1,
+  intraDel: 1,
+});
 const expandedRows = ref();
 const courseMap = computed(() => {
   const map = new Map<string, Course>();
@@ -95,7 +100,15 @@ const allCourses: Ref<Course[] | null> = asyncComputed(async () => {
     }).toString()}`
   );
   if (!res.ok) return [];
-  return await res.json();
+  const seen = new Set();
+  const ret: Course[] = [];
+  for (const course of (await res.json()) as Course[]) {
+    if (!seen.has(course.code)) {
+      seen.add(course.code);
+      ret.push(course);
+    }
+  }
+  return ret;
 }, null);
 
 const filteredCourses: Ref<Course[]> = ref([]);
@@ -108,9 +121,9 @@ function filterCourses(event: AutoCompleteCompleteEvent) {
   filteredCourses.value =
     courses_uf
       .search(
-        courses.map((v) => v.code),
+        courses.map((v) => [v.code.replace(' ', ''), v.code, v.title].join(' ')),
         event.query,
-        1
+        1e3
       )[0]
       ?.map((i) => courses[i]) ?? courses;
 }
@@ -180,8 +193,8 @@ async function removeCourse(course: Course) {
       />
       <Button
         type="submit"
-        :label="`Add Skill${($form.courses?.value?.length ?? 0) > 1 ? 's' : ''}`"
-        :disabled="saving"
+        :label="`Add Skill${($form?.skill?.value?.length ?? 0) > 1 ? 's' : ''}`"
+        :disabled="saving || ($form?.skill?.value?.length ?? 0) === 0"
       />
     </Form>
     <div class="flex flex-wrap gap-2 p-4">
@@ -208,7 +221,7 @@ async function removeCourse(course: Course) {
     <Form v-slot="$form" class="flex flex-wrap gap-4" @submit="addSelectedCourses">
       <AutoComplete
         :suggestions="filteredCourses"
-        :option-label="(v) => v.code"
+        :option-label="(v) => `${v.code} - ${v.title}`"
         :delay="100"
         :auto-option-focus="true"
         :model-value="$form?.courses?.value ?? []"
@@ -222,8 +235,8 @@ async function removeCourse(course: Course) {
       />
       <Button
         type="submit"
-        :label="`Add Course${($form.courses?.value?.length ?? 0) > 1 ? 's' : ''}`"
-        :disabled="saving"
+        :label="`Add Course${($form?.courses?.value?.length ?? 0) > 1 ? 's' : ''}`"
+        :disabled="saving || ($form?.courses?.value?.length ?? 0) === 0"
       />
     </Form>
     <Divider />
